@@ -99,8 +99,12 @@ const GenrePage = () => {
   };
 
   const handleItemClick = (item) => {
-    const url = item.url||item.link; if(!url) return;
-    navigate(`/detail/${contentType}/${encodeURIComponent(url.replace(/\/+$/,''))}`);
+    let url = item.url||item.link; if(!url) return;
+    url = url.replace(/\/+$/, '');
+    if (contentType === 'donghua' && url.includes('-episode-')) {
+      url = url.split('-episode-')[0];
+    }
+    navigate(`/detail/${contentType}/${encodeURIComponent(url)}`);
   };
 
   return (
@@ -195,4 +199,5 @@ const GenrePage = () => {
 
 export default GenrePage;
 
-      
+
+        
