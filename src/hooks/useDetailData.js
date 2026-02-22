@@ -7,6 +7,54 @@ const API_BASE = 'https://anime-api-iota-beryl.vercel.app/api';
 const SAMEHADAKU_BASE = 'https://v1.samehadaku.how';
 const ANICHIN_BASE = 'https://anichin.moe';
 
+// Axios instance dengan timeout 15 detik
+const api = axios.create({ timeout: 15000 });
+
+// Bersihkan URL donghua dari episode suffix
+const cleanDonghuaDetailUrl = (url) => {
+  if (!url) return url;
+  let clean = url.replace(/\/+$/, '');
+  if (clean.includes('-episode-')) {
+    clean = clean.split('-episode-')[0];
+  }
+  return clean + '/';
+};
+
+// Coba fetch dengan beberapa URL alternatif
+const fetchDonghuaDetail = async (rawUrl) => {
+  const base = rawUrl.replace(/\/+$/, '');
+
+  const urlVariants = [
+    base + '/',
+    base,
+  ];
+
+  let lastError = null;
+
+  for (const url of urlVariants) {
+    try {
+      const endpoint = `${API_BASE}/donghua/detail?url=${encodeURIComponent(url)}`;
+      const res = await api.get(endpoint);
+      const data = res.data;
+
+      // Validasi: harus ada data bermakna
+      const payload = data?.data || data;
+      if (
+        data &&
+        (data.success === true || data.success === undefined) &&
+        payload &&
+        (payload.title || payload.episodes)
+      ) {
+        return { data, url };
+      }
+    } catch (err) {
+      lastError = err;
+    }
+  }
+
+  throw lastError || new Error('Semua URL gagal');
+};
+
 export const useDetailData = () => {
   const { category, id } = useParams();
   const [detail, setDetail] = useState(null);
@@ -18,15 +66,15 @@ export const useDetailData = () => {
       try {
         setLoading(true);
         setError(null);
+        setDetail(null);
 
         const decodedUrl = decodeURIComponent(id);
-        console.log('Decoded URL:', decodedUrl);
-        
-        // Build full URL if needed
+
+        // Build full URL
         let fullUrl = decodedUrl;
         if (!decodedUrl.startsWith('http')) {
           if (category === 'anime') {
-            fullUrl = decodedUrl.startsWith('/') 
+            fullUrl = decodedUrl.startsWith('/')
               ? `${SAMEHADAKU_BASE}${decodedUrl}`
               : `${SAMEHADAKU_BASE}/${decodedUrl}`;
           } else {
@@ -36,38 +84,26 @@ export const useDetailData = () => {
           }
         }
 
-        // Safety net: jika URL donghua masih berupa episode URL, clean dulu
         if (category === 'donghua') {
-          fullUrl = fullUrl.replace(/\/+$/, '');
-          if (fullUrl.includes('-episode-')) {
-            fullUrl = fullUrl.split('-episode-')[0];
-          }
-          fullUrl = fullUrl + '/';
-        }
-        
-        console.log('Full URL:', fullUrl);
-
-        // Different endpoints for anime and donghua
-        const endpoint = category === 'anime'
-          ? `${API_BASE}/anime/detail?url=${encodeURIComponent(fullUrl)}`
-          : `${API_BASE}/donghua/detail?url=${encodeURIComponent(fullUrl)}`;
-
-        console.log('Fetching from:', endpoint);
-
-        const response = await axios.get(endpoint);
-        console.log('Response:', response.data);
-        
-        if (response.data) {
-          if (category === 'anime') {
+          fullUrl = cleanDonghuaDetailUrl(fullUrl);
+          const { data, url } = await fetchDonghuaDetail(fullUrl);
+          setDetail(transformDonghuaData(data, url));
+        } else {
+          const endpoint = `${API_BASE}/anime/detail?url=${encodeURIComponent(fullUrl)}`;
+          const response = await api.get(endpoint);
+          if (response.data) {
             setDetail(transformAnimeData(response.data));
           } else {
-            setDetail(transformDonghuaData(response.data, fullUrl));
+            throw new Error('Data anime tidak ditemukan');
           }
         }
+
       } catch (err) {
-        console.error('Error fetching detail:', err);
-        console.error('Error response:', err.response?.data);
-        setError(err.response?.data?.message || 'Failed to load detail data');
+        const msg =
+          err.code === 'ECONNABORTED'
+            ? 'Koneksi timeout, coba lagi'
+            : err.response?.data?.message || err.message || 'Gagal memuat data';
+        setError(msg);
       } finally {
         setLoading(false);
       }
@@ -81,62 +117,43 @@ export const useDetailData = () => {
   return { detail, loading, error };
 };
 
-// Transform function untuk Anime (Samehadaku)
-const transformAnimeData = (data) => {
-  return {
-    title: data.title || 'Unknown Title',
-    image: data.image || '',
-    description: data.description || '',
-    episodes: Array.isArray(data.episodes) ? data.episodes : [],
-    info: data.info || {},
-    source: data.source || 'samehadaku',
-    category: 'anime',
-    
-    // Parse info dari anime
-    status: data.info?.status || (data.info?.released?.includes('to ?') ? 'Ongoing' : 'Completed'),
-    type: data.info?.type || 'TV',
-    totalEpisodes: data.episodes?.length || 0,
-    released: data.info?.released || '',
-    
-    // Alternative titles
-    altTitles: data.info?.synonyms_noble_reincarnation 
-      ? [data.info.synonyms_noble_reincarnation] 
-      : [],
-    
-    rating: null,
-    genres: []
-  };
-};
+// Transform untuk Anime
+const transformAnimeData = (data) => ({
+  title: data.title || 'Unknown Title',
+  image: data.image || '',
+  description: data.description || '',
+  episodes: Array.isArray(data.episodes) ? data.episodes : [],
+  info: data.info || {},
+  source: data.source || 'samehadaku',
+  category: 'anime',
+  status: data.info?.status || (data.info?.released?.includes('to ?') ? 'Ongoing' : 'Completed'),
+  type: data.info?.type || 'TV',
+  totalEpisodes: data.episodes?.length || 0,
+  released: data.info?.released || '',
+  altTitles: data.info?.synonyms_noble_reincarnation ? [data.info.synonyms_noble_reincarnation] : [],
+  rating: null,
+  genres: [],
+});
 
-// Transform function untuk Donghua (Anichin)
+// Transform untuk Donghua
 const transformDonghuaData = (data, sourceUrl = '') => {
-  // Data dari Anichin punya struktur: { success: true, data: { ... } }
-  const donghua = data.data || data;
-  
-  console.log('Donghua data:', donghua); // Debug
-  console.log('Episodes:', donghua.episodes); // Debug episodes
-  
+  const donghua = data?.data || data;
+
   return {
     url: donghua.url || sourceUrl,
     title: donghua.title || 'Unknown Title',
     image: donghua.image || '',
     description: donghua.description || donghua.synopsis || '',
     synopsis: donghua.synopsis || donghua.description || '',
-    episodes: Array.isArray(donghua.episodes) ? donghua.episodes : [], // PASTIKAN INI ARRAY
+    episodes: Array.isArray(donghua.episodes) ? donghua.episodes : [],
     info: donghua.info || {},
     genres: Array.isArray(donghua.genres) ? donghua.genres : [],
     characters: Array.isArray(donghua.characters) ? donghua.characters : [],
     stats: donghua.stats || {},
     source: donghua.source || 'anichin',
     category: 'donghua',
-    
-    // Alternative titles
     altTitles: Array.isArray(donghua.altTitles) ? donghua.altTitles : [],
-    
-    // Rating dengan struktur lengkap
     rating: donghua.rating || null,
-    
-    // Info detail dari donghua.info
     status: donghua.info?.status || 'Unknown',
     type: donghua.info?.type || 'ONA',
     studio: donghua.info?.studio || 'Unknown',
@@ -150,13 +167,9 @@ const transformDonghuaData = (data, sourceUrl = '') => {
     postedBy: donghua.info?.postedBy || '',
     postedOn: donghua.info?.postedOn || '',
     updatedOn: donghua.info?.updatedOn || '',
-    
-    // Stats
-    followers: donghua.stats?.followers || 0
+    followers: donghua.stats?.followers || 0,
   };
 };
 
 export default useDetailData;
-
-
   
