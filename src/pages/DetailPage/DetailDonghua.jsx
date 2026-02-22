@@ -122,7 +122,7 @@ const DetailDonghua = () => {
                       detail.type && { icon: <Tv size={11} />, label: detail.type },
                       detail.totalEpisodes && { icon: <Clock size={11} />, label: `${detail.totalEpisodes} Ep` },
                       detail.country && { icon: <Globe size={11} />, label: detail.country },
-                      detail.rating && { icon: <Star size={11} />, label: detail.rating },
+                      detail.rating?.value && { icon: <Star size={11} />, label: `${detail.rating.value}` },
                     ].filter(Boolean).map((s, i) => (
                         <div key={i} className="flex items-center gap-1.5 px-3 py-2 rounded-xl flex-shrink-0" style={{ background: 'var(--card)', border: '1px solid var(--border)', color: '#fa6d9a' }}>
                             {s.icon}<span className="text-xs font-bold text-white">{s.label}</span>
@@ -143,6 +143,68 @@ const DetailDonghua = () => {
                             style={activeTab === tab ? { background: 'linear-gradient(135deg, #fa6d9a, #fa6d6d)', color: 'white' } : { color: 'var(--muted)' }}>
                             {label}
                         </button>
+                    ))}
+                </div>
+
+                {activeTab === 'episodes' && <DonghuaEpisodesTab episodes={detail.episodes} onEpisodeSelect={handleWatch} />}
+
+                {activeTab === 'details' && (
+                    <div className="space-y-4">
+                        {(detail.description || detail.synopsis) && (
+                            <div className="p-4 rounded-2xl" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
+                                <p className="text-[10px] font-black uppercase tracking-wider mb-3" style={{ color: 'var(--muted)' }}>Sinopsis</p>
+                                <p className="text-sm leading-relaxed" style={{ color: '#c8c8d8' }}>{detail.description || detail.synopsis}</p>
+                            </div>
+                        )}
+                        <div className="p-4 rounded-2xl" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
+                            <p className="text-[10px] font-black uppercase tracking-wider mb-3" style={{ color: 'var(--muted)' }}>Informasi</p>
+                            <div className="space-y-2.5">
+                                {[['Status', detail.status], ['Tipe', detail.type], ['Total Episode', detail.totalEpisodes], ['Studio', detail.studio], ['Rilis', detail.released], ['Negara', detail.country], ['Rating', detail.rating?.value ? `${detail.rating.value}` : null]].filter(([, v]) => v).map(([label, value]) => (
+                                    <div key={label} className="flex items-center justify-between">
+                                        <span className="text-xs" style={{ color: 'var(--muted)' }}>{label}</span>
+                                        <span className="text-xs font-bold text-white">{value}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                        {detail.genres?.length > 0 && (
+                            <div className="p-4 rounded-2xl" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
+                                <p className="text-[10px] font-black uppercase tracking-wider mb-3" style={{ color: 'var(--muted)' }}>Genre</p>
+                                <div className="flex flex-wrap gap-2">
+                                    {detail.genres.map((g, i) => (
+                                        <span key={i} className="px-3 py-1.5 text-xs font-bold rounded-xl" style={{ background: 'rgba(250,109,154,0.15)', color: '#fa6d9a', border: '1px solid rgba(250,109,154,0.2)' }}>{g}</span>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {activeTab === 'characters' && detail.characters?.length > 0 && (
+                    <div className="grid grid-cols-2 gap-3">
+                        {detail.characters.map((char, i) => (
+                            <div key={i} className="p-3 rounded-2xl flex items-center gap-3" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
+                                {char.image ? (
+                                    <img src={char.image} alt={char.name} className="w-12 h-12 rounded-xl object-cover flex-shrink-0" />
+                                ) : (
+                                    <div className="w-12 h-12 rounded-xl flex items-center justify-center text-xl flex-shrink-0" style={{ background: 'var(--surface)' }}>{char.name?.charAt(0)}</div>
+                                )}
+                                <div className="min-w-0">
+                                    <p className="text-xs font-bold text-white truncate">{char.name}</p>
+                                    {char.role && <p className="text-[10px]" style={{ color: 'var(--muted)' }}>{char.role}</p>}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+export default DetailDonghua;
+                                                   
+                    </button>
                     ))}
                 </div>
 
