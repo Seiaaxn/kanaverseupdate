@@ -33,7 +33,7 @@ const DonghuaEpisodesTab = ({ episodes = [], onEpisodeSelect }) => {
                 </button>
             </div>
 
-            <div className="space-y-2 max-h-[500px] overflow-y-auto pr-1">
+            <div className="space-y-2 max-h-[500px] overflow-y-auto pr-1" style={{ scrollbarWidth: 'thin', scrollbarColor: '#3a1a2a transparent' }}>
                 {sorted.map((ep, idx) => {
                     const num = extractNum(ep, idx);
                     const title = ep.title || `Episode ${num}`;
@@ -41,10 +41,10 @@ const DonghuaEpisodesTab = ({ episodes = [], onEpisodeSelect }) => {
                     const hasSub = ep.hasSubtitle || false;
                     return (
                         <button key={`${num}-${idx}`} onClick={() => onEpisodeSelect(ep)}
-                            className="w-full flex items-center gap-3 p-3 rounded-2xl text-left transition-all active:scale-97"
+                            className="w-full flex items-center gap-3 p-3 rounded-2xl text-left transition-all active:scale-97 group"
                             style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
-                            <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 font-black text-xs"
-                                style={{ background: 'rgba(250,109,154,0.15)', color: '#fa6d9a' }}>
+                            <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 font-black text-xs transition-all"
+                                style={{ background: 'linear-gradient(135deg, rgba(250,109,154,0.2), rgba(250,109,109,0.2))', color: '#fa6d9a' }}>
                                 {num}
                             </div>
                             <div className="flex-1 min-w-0">
@@ -54,7 +54,7 @@ const DonghuaEpisodesTab = ({ episodes = [], onEpisodeSelect }) => {
                                 </div>
                                 {date && <p className="text-[10px] mt-0.5" style={{ color: 'var(--muted)' }}>{date}</p>}
                             </div>
-                            <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(250,109,154,0.1)' }}>
+                            <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 transition-all" style={{ background: 'rgba(250,109,154,0.1)' }}>
                                 <Play size={11} className="ml-0.5" style={{ color: '#fa6d9a' }} />
                             </div>
                         </button>
@@ -66,3 +66,4 @@ const DonghuaEpisodesTab = ({ episodes = [], onEpisodeSelect }) => {
 };
 
 export default DonghuaEpisodesTab;
+                
