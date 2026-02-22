@@ -34,13 +34,11 @@ const StreamingDonghuaVideoPlayer = forwardRef(({
                 src={selectedServer.url}
                 className="w-full h-full"
                 allowFullScreen
-                allow="autoplay; fullscreen; picture-in-picture"
+                allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
                 frameBorder="0"
                 title={selectedServer.server}
                 onLoad={onLoad}
                 onError={onError}
-                // Blocks popups and ads redirects
-                sandbox="allow-same-origin allow-scripts allow-presentation allow-top-navigation-by-user-activation"
             />
         </>
     );
