@@ -26,43 +26,75 @@ import {
 
 const API_BASE = 'https://anime-api-iota-beryl.vercel.app/api';
 
-// Ekstrak nomor episode dari berbagai format
+// Ekstrak nomor episode dari URL Anichin:
+// https://anichin.moe/judul-episode-3-subtitle-indonesia/ → 3
+const extractEpNumFromUrl = (url = '') => {
+    const m = url.match(/episode[- _]?(\d+)/i)
+        || url.match(/-(\d+)-subtitle/i)
+        || url.match(/-(\d+)-sub/i)
+        || url.match(/-(\d+)\/?$/);
+    return m ? parseInt(m[1], 10) : null;
+};
+
+// Ekstrak nomor dari berbagai field
 const getEpNumber = (ep, idx) => {
+    if (ep == null) return idx + 1;
     const n = ep.number ?? ep.episode ?? ep.ep;
-    if (n !== undefined && n !== null && n !== '') return typeof n === 'number' ? n : parseFloat(n) || (idx + 1);
+    if (n != null && n !== '') return typeof n === 'number' ? n : (parseFloat(n) || idx + 1);
+    const fromUrl = extractEpNumFromUrl(ep.url || '');
+    if (fromUrl != null) return fromUrl;
     const t = String(ep.title || '');
-    const u = String(ep.url || '');
-    const tm = t.match(/episode\s*(\d+(?:\.\d+)?)/i) || t.match(/ep\.?\s*(\d+(?:\.\d+)?)/i) || t.match(/^(\d+(?:\.\d+)?)/);
-    if (tm) return parseFloat(tm[1]);
-    const um = u.match(/episode[- _]?(\d+)/i) || u.match(/ep[- _]?(\d+)/i) || u.match(/-0*(\d+)(?:-subtitle|-sub|-end|\/|$)/i);
-    if (um) return parseFloat(um[1]);
+    const tm = t.match(/episode\s*(\d+)/i) || t.match(/ep\.?\s*(\d+)/i) || t.match(/(\d+)/);
+    if (tm) return parseInt(tm[1], 10);
     return idx + 1;
 };
 
-// Normalisasi episodes agar punya field number + deduplikasi
-const normalizeEpisodes = (episodes, currentUrl) => {
-    if (!Array.isArray(episodes)) return [];
-    // Tetapkan number ke setiap episode
-    const withNum = episodes.map((ep, idx) => ({
+// Cek apakah URL adalah episode dari donghua yang SAMA
+// Bandingkan base path (tanpa -episode-N-subtitle-*)
+const isSameDonghua = (urlA, urlB) => {
+    try {
+        const hostA = new URL(urlA).hostname;
+        const hostB = new URL(urlB).hostname;
+        if (hostA !== hostB) return false;
+        // Ambil slug dasar (sebelum -episode-)
+        const baseA = urlA.replace(/-episode-\d+.*$/i, '').replace(/\/$/, '');
+        const baseB = urlB.replace(/-episode-\d+.*$/i, '').replace(/\/$/, '');
+        return baseA === baseB;
+    } catch { return false; }
+};
+
+// Normalisasi + deduplikasi + sort episodes
+const normalizeEpisodes = (eps, currentUrl) => {
+    if (!Array.isArray(eps) || eps.length === 0) return [];
+    
+    // Filter hanya episode dari donghua yang sama
+    const filtered = eps.filter(ep => {
+        if (!ep?.url) return false;
+        return isSameDonghua(ep.url, currentUrl);
+    });
+
+    // Set nomor episode
+    const withNum = filtered.map((ep, idx) => ({
         ...ep,
         number: getEpNumber(ep, idx),
     }));
+
     // Deduplikasi berdasarkan URL
     const seen = new Set();
-    return withNum.filter(ep => {
-        if (!ep.url) return false;
+    const deduped = withNum.filter(ep => {
         if (seen.has(ep.url)) return false;
         seen.add(ep.url);
         return true;
     });
+
+    // Sort ascending ep 1 → dst
+    return deduped.sort((a, b) => a.number - b.number);
 };
 
 const StreamingDonghua = () => {
     const navigate = useNavigate();
     const location = useLocation();
-
-    const searchParams = new URLSearchParams(location.search);
-    const episodeUrl = searchParams.get('url');
+    const episodeUrl = new URLSearchParams(location.search).get('url');
 
     const [episodeData, setEpisodeData] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -92,28 +124,45 @@ const StreamingDonghua = () => {
     useEffect(() => { return () => stopWatchTimer(); }, [stopWatchTimer]);
 
     useEffect(() => {
-        const fetchEpisodeDetail = async () => {
-            if (!episodeUrl) { setError('No episode URL provided'); setLoading(false); return; }
+        if (!episodeUrl) { setError('No episode URL provided'); setLoading(false); return; }
+
+        const fetch = async () => {
             try {
                 setLoading(true);
-                const response = await axios.get(`${API_BASE}/donghua/episode?url=${encodeURIComponent(episodeUrl)}`);
-                if (response.data.success) {
-                    setEpisodeData(response.data.data);
-                    const streams = response.data.data.streams || [];
-                    const best = streams.find(s => !s.hasAds) || streams[0] || null;
-                    setSelectedServer(best);
-                    if (best) setIsIframeLoading(true);
-                } else {
-                    setError(response.data.error || 'Failed to load episode');
+                setError(null);
+
+                // Coba /donghua/episode dulu, fallback ke /donghua/watch
+                let data = null;
+                for (const endpoint of [
+                    `${API_BASE}/donghua/episode?url=${encodeURIComponent(episodeUrl)}`,
+                    `${API_BASE}/donghua/watch?url=${encodeURIComponent(episodeUrl)}`,
+                ]) {
+                    try {
+                        const res = await axios.get(endpoint);
+                        if (res.data?.success && res.data?.data) {
+                            data = res.data.data;
+                            break;
+                        }
+                    } catch { /* coba endpoint berikutnya */ }
                 }
+
+                if (!data) { setError('Gagal memuat episode'); return; }
+
+                setEpisodeData(data);
+                const streams = data.streams || [];
+                const best = streams.find(s => !s.hasAds) || streams[0] || null;
+                setSelectedServer(best);
+                if (best) setIsIframeLoading(true);
+
             } catch (err) {
                 console.error('Error fetching donghua episode:', err);
-                setError('Failed to load episode data');
+                setError('Gagal memuat data episode');
             } finally {
                 setLoading(false);
             }
         };
-        fetchEpisodeDetail();
+
+        fetch();
     }, [episodeUrl]);
 
     const handleBack = () => { stopWatchTimer(); navigate(-1); };
@@ -122,12 +171,8 @@ const StreamingDonghua = () => {
 
     const handleEpisodeClick = (ep) => {
         if (!ep?.url) return;
-        // Cegah navigasi ke domain berbeda (donghua lain)
-        try {
-            const currentHost = new URL(episodeUrl).hostname;
-            const targetHost = new URL(ep.url).hostname;
-            if (currentHost !== targetHost) return;
-        } catch { /* abaikan error parsing URL */ }
+        // Pastikan episode dari donghua yang sama
+        if (!isSameDonghua(ep.url, episodeUrl)) return;
         stopWatchTimer();
         setEpisodeData(null);
         setSelectedServer(null);
@@ -136,34 +181,28 @@ const StreamingDonghua = () => {
         navigate(`/donghua/watch?url=${encodeURIComponent(ep.url)}`);
     };
 
-    if (loading) {
-        return (
-            <div className="min-h-screen bg-dark-bg">
-                <div className="h-12 glass border-b border-white/5 flex items-center px-4">
-                    <div className="w-6 h-6 bg-dark-card rounded animate-pulse" />
-                    <div className="ml-3 w-40 h-4 bg-dark-card rounded animate-pulse" />
-                </div>
-                <div className="w-full aspect-video bg-dark-surface animate-pulse" />
-                <div className="px-4 py-4 space-y-3">
-                    <div className="h-5 w-3/4 bg-dark-card rounded animate-pulse" />
-                    <div className="h-4 w-full bg-dark-card rounded animate-pulse" />
-                    <div className="h-4 w-2/3 bg-dark-card rounded animate-pulse" />
-                </div>
+    if (loading) return (
+        <div className="min-h-screen bg-dark-bg">
+            <div className="h-12 glass border-b border-white/5 flex items-center px-4">
+                <div className="w-6 h-6 bg-dark-card rounded animate-pulse" />
+                <div className="ml-3 w-40 h-4 bg-dark-card rounded animate-pulse" />
             </div>
-        );
-    }
+            <div className="w-full aspect-video bg-dark-surface animate-pulse" />
+            <div className="px-4 py-4 space-y-3">
+                <div className="h-5 w-3/4 bg-dark-card rounded animate-pulse" />
+                <div className="h-4 w-full bg-dark-card rounded animate-pulse" />
+                <div className="h-4 w-2/3 bg-dark-card rounded animate-pulse" />
+            </div>
+        </div>
+    );
 
-    if (error || !episodeData) {
-        return <StreamingAnimeErrorState error={error} onGoHome={handleGoHome} />;
-    }
+    if (error || !episodeData) return <StreamingAnimeErrorState error={error} onGoHome={handleGoHome} />;
 
     const { currentEpisode, donghua, streams, downloads } = episodeData;
 
-    // Normalisasi episodes: hapus duplikat, tetapkan nomor dari URL/title
-    const rawEpisodes = episodeData.episodes || episodeData.allEpisodes || episodeData.relatedEpisodes || [];
-    const episodes = normalizeEpisodes(rawEpisodes, episodeUrl);
+    const rawEps = episodeData.episodes || episodeData.allEpisodes || episodeData.relatedEpisodes || [];
+    const episodes = normalizeEpisodes(rawEps, episodeUrl);
 
-    // Buat objek anime-compatible dari data donghua
     const animeCompat = donghua ? {
         title: donghua.title,
         synopsis: donghua.synopsis || donghua.description || '',
@@ -172,9 +211,9 @@ const StreamingDonghua = () => {
         rating: donghua.rating,
     } : null;
 
-    // Nomor episode saat ini
-    const currentEpNumber = currentEpisode?.number
-        ?? getEpNumber(currentEpisode || {}, 0);
+    const currentEpNumber = currentEpisode
+        ? getEpNumber(currentEpisode, 0)
+        : extractEpNumFromUrl(episodeUrl) || 1;
 
     return (
         <div className="min-h-screen bg-dark-bg">
