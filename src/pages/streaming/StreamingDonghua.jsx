@@ -113,7 +113,13 @@ const StreamingDonghua = () => {
     const handleGoHome = () => navigate('/');
 
     const handleEpisodeClick = (ep) => {
-        if (ep?.url) { stopWatchTimer(); navigate(`/donghua/watch?url=${encodeURIComponent(ep.url)}`); }
+        if (!ep?.url) return;
+        stopWatchTimer();
+        setEpisodeData(null);
+        setSelectedServer(null);
+        setError(null);
+        setLoading(true);
+        navigate(`/donghua/watch?url=${encodeURIComponent(ep.url)}`, { replace: false });
     };
 
     if (loading) return <StreamingDonghuaLoadingState />;
@@ -170,4 +176,5 @@ const StreamingDonghua = () => {
 export default StreamingDonghua;
 
 
-                                           
+
+                                 
