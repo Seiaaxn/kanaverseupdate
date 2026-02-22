@@ -52,7 +52,7 @@ export const useDetailData = () => {
           if (category === 'anime') {
             setDetail(transformAnimeData(response.data));
           } else {
-            setDetail(transformDonghuaData(response.data));
+            setDetail(transformDonghuaData(response.data, fullUrl));
           }
         }
       } catch (err) {
@@ -100,7 +100,7 @@ const transformAnimeData = (data) => {
 };
 
 // Transform function untuk Donghua (Anichin)
-const transformDonghuaData = (data) => {
+const transformDonghuaData = (data, sourceUrl = '') => {
   // Data dari Anichin punya struktur: { success: true, data: { ... } }
   const donghua = data.data || data;
   
@@ -108,6 +108,7 @@ const transformDonghuaData = (data) => {
   console.log('Episodes:', donghua.episodes); // Debug episodes
   
   return {
+    url: donghua.url || sourceUrl,
     title: donghua.title || 'Unknown Title',
     image: donghua.image || '',
     description: donghua.description || donghua.synopsis || '',
