@@ -1,18 +1,9 @@
-import StreamingDonghuaCommentsSection from '../../components/streaming/donghua/StreamingDonghuaCommentsSection';
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { addXP, getUser } from '../../utils/userSystem';
-import { syncUserNow } from '../../services/firebase';
-
-const showXPToast = (amount, extra = '') => {
-    const toast = document.createElement('div');
-    toast.className = 'xp-toast';
-    toast.textContent = `⚡ +${amount} XP${extra}`;
-    document.body.appendChild(toast);
-    setTimeout(() => toast.classList.add('show'), 100);
-    setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, 2800);
-};
 import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
+import { addXP, getUser } from '../../utils/userSystem';
+import { syncUserNow } from '../../services/firebase';
+import StreamingDonghuaCommentsSection from '../../components/streaming/donghua/StreamingDonghuaCommentsSection';
 
 import {
     StreamingDonghuaNavbar,
@@ -26,12 +17,20 @@ import {
 
 const API_BASE = 'https://anime-api-iota-beryl.vercel.app/api';
 
+const showToast = (text) => {
+    const toast = document.createElement('div');
+    toast.className = 'xp-toast';
+    toast.textContent = text;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.classList.add('show'), 100);
+    setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, 2800);
+};
+
 const StreamingDonghua = () => {
     const navigate = useNavigate();
     const location = useLocation();
 
-    const searchParams = new URLSearchParams(location.search);
-    const episodeUrl = searchParams.get('url');
+    const episodeUrl = new URLSearchParams(location.search).get('url');
 
     const [episodeData, setEpisodeData] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -48,7 +47,7 @@ const StreamingDonghua = () => {
         xpTimerRef.current = setInterval(() => {
             const result = addXP(100, 'Menonton donghua 20 menit');
             if (result) {
-                showXPToast(100, result.leveledUp ? ` 🎉 Level ${result.newLevel}!` : ' (nonton 20 menit)');
+                showToast(`⚡ +100 XP${result.leveledUp ? ` 🎉 Level ${result.newLevel}!` : ' (nonton 20 menit)'}`);
                 syncUserNow();
             }
         }, 20 * 60 * 1000);
@@ -61,51 +60,38 @@ const StreamingDonghua = () => {
     useEffect(() => { return () => stopWatchTimer(); }, [stopWatchTimer]);
 
     useEffect(() => {
+        if (!episodeUrl) { setError('No episode URL provided'); setLoading(false); return; }
 
-        const fetchEpisodeDetail = async () => {
-            if (!episodeUrl) {
-                setError('No episode URL provided');
-                setLoading(false);
-                return;
-            }
-
+        const fetchEpisode = async () => {
             try {
                 setLoading(true);
+                setError(null);
                 const response = await axios.get(`${API_BASE}/donghua/episode?url=${encodeURIComponent(episodeUrl)}`);
 
                 if (response.data.success) {
                     setEpisodeData(response.data.data);
                     const streams = response.data.data.streams || [];
-                    // Prioritas: server tanpa iklan, lalu server pertama
                     const noAdsServer = streams.find(s => !s.hasAds);
                     const firstServer = noAdsServer || streams[0] || null;
                     setSelectedServer(firstServer);
                     if (firstServer) {
                         setIsIframeLoading(true);
-                        // Notifikasi kalau terpaksa pakai server beriklan
                         if (!noAdsServer && firstServer?.hasAds) {
-                            setTimeout(() => {
-                                const toast = document.createElement('div');
-                                toast.className = 'xp-toast';
-                                toast.textContent = '⚠️ Server tanpa iklan tidak tersedia';
-                                document.body.appendChild(toast);
-                                setTimeout(() => toast.classList.add('show'), 100);
-                                setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, 3000);
-                            }, 1000);
+                            setTimeout(() => showToast('⚠️ Server tanpa iklan tidak tersedia'), 1000);
                         }
                     }
                 } else {
-                    setError(response.data.error || 'Failed to load episode');
+                    setError(response.data.error || 'Gagal memuat episode');
                 }
             } catch (err) {
-                console.error('Error fetching donghua episode:', err);
-                setError('Failed to load episode data');
+                console.error('Error fetching episode:', err);
+                setError('Gagal memuat data episode');
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchEpisodeDetail();
+        fetchEpisode();
     }, [episodeUrl]);
 
     const handleBack = () => { stopWatchTimer(); navigate(-1); };
@@ -114,19 +100,34 @@ const StreamingDonghua = () => {
 
     const handleEpisodeClick = (ep) => {
         if (!ep?.url) return;
+        // Validasi domain sama agar tidak nyasar ke donghua lain
+        try {
+            const currentHost = new URL(episodeUrl).hostname;
+            const targetHost = new URL(ep.url).hostname;
+            if (currentHost !== targetHost) {
+                console.warn('Domain berbeda, navigasi dibatalkan');
+                return;
+            }
+        } catch { /* abaikan error parsing */ }
+
         stopWatchTimer();
+        // Reset state dulu agar halaman reload bersih
         setEpisodeData(null);
         setSelectedServer(null);
         setError(null);
         setLoading(true);
-        navigate(`/donghua/watch?url=${encodeURIComponent(ep.url)}`, { replace: false });
+        navigate(`/donghua/watch?url=${encodeURIComponent(ep.url)}`);
     };
 
     if (loading) return <StreamingDonghuaLoadingState />;
     if (error || !episodeData) return <StreamingDonghuaErrorState error={error} onGoHome={handleGoHome} />;
 
     const { currentEpisode, donghua, streams } = episodeData;
-    const episodes = episodeData.episodes || episodeData.allEpisodes || episodeData.relatedEpisodes || episodeData.episodeList || [];
+    const episodes = episodeData.episodes
+        || episodeData.allEpisodes
+        || episodeData.relatedEpisodes
+        || episodeData.episodeList
+        || [];
 
     return (
         <div className="min-h-screen bg-dark-bg">
@@ -137,7 +138,6 @@ const StreamingDonghua = () => {
                 onBack={handleBack}
             />
 
-            {/* Video Player */}
             <div className="pt-12 relative w-full bg-black aspect-video">
                 <StreamingDonghuaVideoPlayer
                     ref={iframeRef}
@@ -148,7 +148,6 @@ const StreamingDonghua = () => {
                 />
             </div>
 
-            {/* Content */}
             <div className="px-4 py-4">
                 <StreamingDonghuaInfoCard
                     episodeNumber={currentEpisode?.number}
@@ -164,6 +163,7 @@ const StreamingDonghua = () => {
                 <StreamingDonghuaRelatedEpisodes
                     episodes={episodes}
                     currentEpisodeNumber={currentEpisode?.number}
+                    currentEpisodeUrl={episodeUrl}
                     onEpisodeClick={handleEpisodeClick}
                 />
 
@@ -174,7 +174,3 @@ const StreamingDonghua = () => {
 };
 
 export default StreamingDonghua;
-
-
-
-                                 
