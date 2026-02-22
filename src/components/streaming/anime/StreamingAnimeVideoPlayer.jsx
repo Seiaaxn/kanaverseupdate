@@ -37,8 +37,7 @@ const StreamingAnimeVideoPlayer = forwardRef(({
                         title={selectedServer.server}
                         onLoad={onLoad}
                         onError={onError}
-                        // Restrict popups and ads
-                        sandbox="allow-same-origin allow-scripts allow-presentation allow-top-navigation-by-user-activation"
+                        allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
                     />
                 </>
             )}
