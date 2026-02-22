@@ -34,6 +34,10 @@ const HomePage = () => {
     let itemUrl = item.url || item.link;
     if (!itemUrl) return;
     itemUrl = itemUrl.replace(/\/+$/, '');
+    // Jika URL masih berupa episode URL, clean dulu
+    if (category === 'donghua' && itemUrl.includes('-episode-')) {
+      itemUrl = itemUrl.split('-episode-')[0];
+    }
     navigate(`/detail/${category}/${encodeURIComponent(itemUrl)}`);
   };
 
@@ -94,4 +98,5 @@ const HomePage = () => {
 };
 
 export default HomePage;
-        
+
+      
