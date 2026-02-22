@@ -74,7 +74,7 @@ const LoginPage = () => {
             <span className="text-2xl">🎌</span>
           </div>
           <h1 className="text-3xl font-black mb-1">
-            <span className="gradient-text">Kan4</span><span className="text-white">verse</span>
+            <span className="gradient-text">KanaVerse</span><span className="text-white">ID</span>
           </h1>
           <p className="text-sm" style={{color:'var(--muted)'}}>
             {tab==='login'?'Selamat datang kembali, Nakama! 👋':'Bergabunglah dengan komunitas! 🎉'}
