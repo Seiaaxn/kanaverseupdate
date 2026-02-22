@@ -2,29 +2,10 @@ import { Play, ArrowUpDown } from 'lucide-react';
 import { useState } from 'react';
 
 const extractNum = (ep, idx) => {
-    const n = ep.number ?? ep.episode ?? ep.ep;
-    if (n !== undefined && n !== null && n !== '') return parseFloat(String(n)) || idx;
-    const titleMatch = String(ep.title || '').match(/episode\s*(\d+(?:\.\d+)?)/i)
-        || String(ep.title || '').match(/ep\.?\s*(\d+(?:\.\d+)?)/i)
-        || String(ep.title || '').match(/(\d+(?:\.\d+)?)/);
-    if (titleMatch) return parseFloat(titleMatch[1]);
-    const urlMatch = String(ep.url || '').match(/episode[- _]?(\d+)/i)
-        || String(ep.url || '').match(/ep[- _]?(\d+)/i)
-        || String(ep.url || '').match(/-0*(\d+)(?:-subtitle|-sub|-end|\/|$)/i);
-    if (urlMatch) return parseFloat(urlMatch[1]);
-    return idx;
-};
-
-const getLabel = (ep, idx) => {
-    const n = ep.number ?? ep.episode ?? ep.ep;
-    if (n !== undefined && n !== null && n !== '') return String(n);
-    const match = String(ep.title || '').match(/episode\s*(\d+(?:\.\d+)?)/i)
-        || String(ep.title || '').match(/(\d+(?:\.\d+)?)/);
-    if (match) return match[1];
-    const urlMatch = String(ep.url || '').match(/episode[- _]?(\d+)/i)
-        || String(ep.url || '').match(/-0*(\d+)(?:-subtitle|-sub|-end|\/|$)/i);
-    if (urlMatch) return urlMatch[1];
-    return String(idx + 1);
+    const n = ep.number ?? ep.episode;
+    if (n !== undefined && n !== null) return parseFloat(n) || idx;
+    const match = String(ep.title || '').match(/\d+(\.\d+)?/);
+    return match ? parseFloat(match[0]) : idx;
 };
 
 const DonghuaEpisodesTab = ({ episodes = [], onEpisodeSelect }) => {
@@ -43,9 +24,7 @@ const DonghuaEpisodesTab = ({ episodes = [], onEpisodeSelect }) => {
     return (
         <div className="space-y-3">
             <div className="flex items-center justify-between">
-                <p className="text-sm font-black text-white">
-                    {episodes.length} <span style={{ color: 'var(--muted)', fontWeight: 500 }}>Episode</span>
-                </p>
+                <p className="text-sm font-black text-white">{episodes.length} <span style={{ color: 'var(--muted)', fontWeight: 500 }}>Episode</span></p>
                 <button onClick={() => setSortOrder(s => s === 'latest' ? 'oldest' : 'latest')}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95"
                     style={{ background: 'rgba(250,109,154,0.15)', color: '#fa6d9a', border: '1px solid rgba(250,109,154,0.2)' }}>
@@ -56,10 +35,10 @@ const DonghuaEpisodesTab = ({ episodes = [], onEpisodeSelect }) => {
 
             <div className="space-y-2 max-h-[500px] overflow-y-auto pr-1">
                 {sorted.map((ep, idx) => {
-                    const num = getLabel(ep, idx);
+                    const num = extractNum(ep, idx);
                     const title = ep.title || `Episode ${num}`;
                     const date = ep.date || ep.releaseDate || '';
-                    const hasSub = ep.hasSubtitle || ep.sub || false;
+                    const hasSub = ep.hasSubtitle || false;
                     return (
                         <button key={`${num}-${idx}`} onClick={() => onEpisodeSelect(ep)}
                             className="w-full flex items-center gap-3 p-3 rounded-2xl text-left transition-all active:scale-97"
@@ -71,15 +50,11 @@ const DonghuaEpisodesTab = ({ episodes = [], onEpisodeSelect }) => {
                             <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-1.5">
                                     <p className="text-sm font-semibold text-white line-clamp-1">{title}</p>
-                                    {hasSub && (
-                                        <span className="text-[9px] font-black px-1.5 py-0.5 rounded-md flex-shrink-0"
-                                            style={{ background: 'rgba(109,250,188,0.2)', color: '#6dfabc' }}>SUB</span>
-                                    )}
+                                    {hasSub && <span className="text-[9px] font-black px-1.5 py-0.5 rounded-md flex-shrink-0" style={{ background: 'rgba(109,250,188,0.2)', color: '#6dfabc' }}>SUB</span>}
                                 </div>
                                 {date && <p className="text-[10px] mt-0.5" style={{ color: 'var(--muted)' }}>{date}</p>}
                             </div>
-                            <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
-                                style={{ background: 'rgba(250,109,154,0.1)' }}>
+                            <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(250,109,154,0.1)' }}>
                                 <Play size={11} className="ml-0.5" style={{ color: '#fa6d9a' }} />
                             </div>
                         </button>
