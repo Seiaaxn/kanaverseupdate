@@ -35,6 +35,15 @@ export const useDetailData = () => {
               : `${ANICHIN_BASE}/${decodedUrl}`;
           }
         }
+
+        // Safety net: jika URL donghua masih berupa episode URL, clean dulu
+        if (category === 'donghua') {
+          fullUrl = fullUrl.replace(/\/+$/, '');
+          if (fullUrl.includes('-episode-')) {
+            fullUrl = fullUrl.split('-episode-')[0];
+          }
+          fullUrl = fullUrl + '/';
+        }
         
         console.log('Full URL:', fullUrl);
 
@@ -148,5 +157,6 @@ const transformDonghuaData = (data, sourceUrl = '') => {
 };
 
 export default useDetailData;
+
 
   
