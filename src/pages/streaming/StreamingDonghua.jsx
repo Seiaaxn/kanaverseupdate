@@ -119,7 +119,8 @@ const StreamingDonghua = () => {
     if (loading) return <StreamingDonghuaLoadingState />;
     if (error || !episodeData) return <StreamingDonghuaErrorState error={error} onGoHome={handleGoHome} />;
 
-    const { currentEpisode, donghua, episodes, streams } = episodeData;
+    const { currentEpisode, donghua, streams } = episodeData;
+    const episodes = episodeData.episodes || episodeData.allEpisodes || episodeData.relatedEpisodes || episodeData.episodeList || [];
 
     return (
         <div className="min-h-screen bg-dark-bg">
@@ -169,4 +170,4 @@ const StreamingDonghua = () => {
 export default StreamingDonghua;
 
 
-        
+                                           
