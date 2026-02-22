@@ -122,7 +122,7 @@ const DetailDonghua = () => {
                       detail.type && { icon: <Tv size={11} />, label: detail.type },
                       detail.totalEpisodes && { icon: <Clock size={11} />, label: `${detail.totalEpisodes} Ep` },
                       detail.country && { icon: <Globe size={11} />, label: detail.country },
-                      detail.rating?.value && { icon: <Star size={11} />, label: `${detail.rating.value}` },
+                      detail.rating && { icon: <Star size={11} />, label: detail.rating },
                     ].filter(Boolean).map((s, i) => (
                         <div key={i} className="flex items-center gap-1.5 px-3 py-2 rounded-xl flex-shrink-0" style={{ background: 'var(--card)', border: '1px solid var(--border)', color: '#fa6d9a' }}>
                             {s.icon}<span className="text-xs font-bold text-white">{s.label}</span>
@@ -159,7 +159,7 @@ const DetailDonghua = () => {
                         <div className="p-4 rounded-2xl" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
                             <p className="text-[10px] font-black uppercase tracking-wider mb-3" style={{ color: 'var(--muted)' }}>Informasi</p>
                             <div className="space-y-2.5">
-                                {[['Status', detail.status], ['Tipe', detail.type], ['Total Episode', detail.totalEpisodes], ['Studio', detail.studio], ['Rilis', detail.released], ['Negara', detail.country], ['Rating', detail.rating?.value ? `${detail.rating.value}` : null], ['Fansub', detail.fansub], ['Posted by', detail.postedBy]].filter(([, v]) => v).map(([label, value]) => (
+                                {[['Status', detail.status], ['Tipe', detail.type], ['Total Episode', detail.totalEpisodes], ['Studio', detail.studio], ['Rilis', detail.released], ['Negara', detail.country], ['Rating', detail.rating]].filter(([, v]) => v).map(([label, value]) => (
                                     <div key={label} className="flex items-center justify-between">
                                         <span className="text-xs" style={{ color: 'var(--muted)' }}>{label}</span>
                                         <span className="text-xs font-bold text-white">{value}</span>
@@ -203,4 +203,5 @@ const DetailDonghua = () => {
 };
 
 export default DetailDonghua;
-    
+
+            
