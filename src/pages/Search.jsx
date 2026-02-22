@@ -106,8 +106,12 @@ const SearchPage = () => {
     const handleItemClick = (item) => {
         // Navigasi ke halaman detail berdasarkan source
         const category = item.source === 'samehadaku' || item.source === 'anime' ? 'anime' : 'donghua';
-        const encodedUrl = encodeURIComponent(item.url);
-        navigate(`/detail/${category}/${encodedUrl}`);
+        let url = item.url || '';
+        url = url.replace(/\/+$/, '');
+        if (category === 'donghua' && url.includes('-episode-')) {
+            url = url.split('-episode-')[0];
+        }
+        navigate(`/detail/${category}/${encodeURIComponent(url)}`);
     };
 
     const clearSearch = () => {
@@ -286,3 +290,4 @@ const SearchPage = () => {
 };
 
 export default SearchPage;
+        
