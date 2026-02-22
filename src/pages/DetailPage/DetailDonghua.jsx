@@ -159,7 +159,7 @@ const DetailDonghua = () => {
                         <div className="p-4 rounded-2xl" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
                             <p className="text-[10px] font-black uppercase tracking-wider mb-3" style={{ color: 'var(--muted)' }}>Informasi</p>
                             <div className="space-y-2.5">
-                                {[['Status', detail.status], ['Tipe', detail.type], ['Total Episode', detail.totalEpisodes], ['Studio', detail.studio], ['Rilis', detail.released], ['Negara', detail.country], ['Rating', detail.rating?.value ? `${detail.rating.value}` : null]].filter(([, v]) => v).map(([label, value]) => (
+                                {[['Status', detail.status], ['Tipe', detail.type], ['Total Episode', detail.totalEpisodes], ['Studio', detail.studio], ['Rilis', detail.released], ['Negara', detail.country], ['Rating', detail.rating?.value ? `${detail.rating.value}` : null], ['Fansub', detail.fansub], ['Posted by', detail.postedBy]].filter(([, v]) => v).map(([label, value]) => (
                                     <div key={label} className="flex items-center justify-between">
                                         <span className="text-xs" style={{ color: 'var(--muted)' }}>{label}</span>
                                         <span className="text-xs font-bold text-white">{value}</span>
@@ -203,4 +203,5 @@ const DetailDonghua = () => {
 };
 
 export default DetailDonghua;
-            
+
+                          
