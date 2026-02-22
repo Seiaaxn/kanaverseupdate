@@ -38,10 +38,14 @@ const SchedulePage = () => {
   },[]);
 
   const handleItemClick = (item) => {
-    const url = item.url || item.link;
+    let url = item.url || item.link;
     if (!url) return;
     const category = item.type === 'donghua' ? 'donghua' : 'anime';
-    navigate(`/detail/${category}/${encodeURIComponent(url.replace(/\/+$/,''))}`);
+    url = url.replace(/\/+$/, '');
+    if (category === 'donghua' && url.includes('-episode-')) {
+      url = url.split('-episode-')[0];
+    }
+    navigate(`/detail/${category}/${encodeURIComponent(url)}`);
   };
 
   const getCurrentSchedule = () => {
@@ -137,4 +141,5 @@ const SchedulePage = () => {
 };
 
 export default SchedulePage;
-                                                         
+
+             
