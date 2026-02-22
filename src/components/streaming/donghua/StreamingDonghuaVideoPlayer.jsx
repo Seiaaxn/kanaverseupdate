@@ -29,6 +29,15 @@ const StreamingDonghuaVideoPlayer = forwardRef(({
                 </div>
             )}
 
+            {selectedServer.hasAds && (
+                <div className="absolute top-2 left-0 right-0 z-20 flex justify-center pointer-events-none">
+                    <div className="px-3 py-1.5 rounded-xl text-[10px] font-bold flex items-center gap-1.5"
+                        style={{ background: 'rgba(234,179,8,0.15)', border: '1px solid rgba(234,179,8,0.3)', color: '#eab308' }}>
+                        ⚠️ Server ini mengandung iklan
+                    </div>
+                </div>
+            )}
+
             <iframe
                 ref={ref}
                 src={selectedServer.url}
@@ -39,7 +48,6 @@ const StreamingDonghuaVideoPlayer = forwardRef(({
                 title={selectedServer.server}
                 onLoad={onLoad}
                 onError={onError}
-                // Blocks popups and ads redirects
                 sandbox="allow-same-origin allow-scripts allow-presentation allow-top-navigation-by-user-activation"
             />
         </>
@@ -49,3 +57,4 @@ const StreamingDonghuaVideoPlayer = forwardRef(({
 StreamingDonghuaVideoPlayer.displayName = 'StreamingDonghuaVideoPlayer';
 
 export default StreamingDonghuaVideoPlayer;
+        
