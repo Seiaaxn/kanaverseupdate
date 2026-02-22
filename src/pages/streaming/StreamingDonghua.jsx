@@ -71,6 +71,7 @@ const StreamingDonghua = () => {
 
             try {
                 setLoading(true);
+                setIsIframeLoading(false);
                 const response = await axios.get(`${API_BASE}/donghua/episode?url=${encodeURIComponent(episodeUrl)}`);
 
                 if (response.data.success) {
@@ -154,6 +155,7 @@ const StreamingDonghua = () => {
 };
 
 export default StreamingDonghua;
+
 
 
         
