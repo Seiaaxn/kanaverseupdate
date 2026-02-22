@@ -27,8 +27,10 @@ const DetailDonghua = () => {
 
     const handleWatch = (episode) => {
         if (!detail || !episode) return;
-        addToUserHistory({ title: detail.title, image: detail.image, url: detail.url || window.location.href, category: 'donghua' },
-            { title: episode.title, url: episode.url, episode: episode.number || episode.episode });
+        addToUserHistory(
+            { title: detail.title, image: detail.image, url: detail.url || window.location.href, category: 'donghua' },
+            { title: episode.title, url: episode.url, episode: episode.number || episode.episode }
+        );
         showXPToast(addXP(50, 'Episode donghua ditonton'));
         navigate(`/donghua/watch?url=${encodeURIComponent(episode.url)}`);
     };
@@ -56,7 +58,10 @@ const DetailDonghua = () => {
             <div className="text-5xl mb-4">😢</div>
             <h2 className="text-lg font-bold text-white mb-2">Gagal memuat</h2>
             <p className="text-sm mb-6 text-center" style={{ color: 'var(--muted)' }}>{error || 'Donghua tidak ditemukan'}</p>
-            <button onClick={() => navigate(-1)} className="px-6 py-3 rounded-2xl font-bold text-white text-sm" style={{ background: 'linear-gradient(135deg, #fa6d9a, #fa6d6d)' }}>Kembali</button>
+            <div className="flex gap-3">
+                <button onClick={() => window.location.reload()} className="px-6 py-3 rounded-2xl font-bold text-white text-sm" style={{ background: 'linear-gradient(135deg, #fa6d9a, #fa6d6d)' }}>Coba Lagi</button>
+                <button onClick={() => navigate(-1)} className="px-6 py-3 rounded-2xl font-bold text-sm" style={{ background: 'var(--card)', color: 'var(--muted)', border: '1px solid var(--border)' }}>Kembali</button>
+            </div>
         </div>
     );
 
@@ -67,6 +72,7 @@ const DetailDonghua = () => {
 
     return (
         <div className="min-h-screen pb-8" style={{ background: 'var(--bg)' }}>
+            {/* Fixed header */}
             <div className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-3 h-14" style={{ maxWidth: '480px', margin: '0 auto', background: 'linear-gradient(to bottom, rgba(7,7,17,0.95), transparent)' }}>
                 <button onClick={() => navigate(-1)} className="w-9 h-9 rounded-2xl flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.1)' }}>
                     <ChevronLeft size={20} className="text-white" />
@@ -81,6 +87,7 @@ const DetailDonghua = () => {
                 </div>
             </div>
 
+            {/* Hero */}
             <div className="relative h-72 overflow-hidden">
                 <img src={detail.image || fallback} alt={detail.title}
                     className={`w-full h-full object-cover transition-opacity duration-500 ${imgLoaded ? 'opacity-100' : 'opacity-0'}`}
@@ -92,6 +99,7 @@ const DetailDonghua = () => {
                 </div>
             </div>
 
+            {/* Content */}
             <div className="px-4 -mt-8 relative z-10">
                 <div className="flex gap-3 mb-4">
                     <div className="w-20 flex-shrink-0 -mt-12">
@@ -112,17 +120,20 @@ const DetailDonghua = () => {
                     </div>
                 </div>
 
+                {/* XP Info */}
                 <div className="flex items-center gap-2 mb-3 px-3 py-2 rounded-2xl" style={{ background: 'rgba(250,109,154,0.1)', border: '1px solid rgba(250,109,154,0.2)' }}>
                     <span className="text-sm">⚡</span>
                     <p className="text-xs font-bold" style={{ color: '#fa6d9a' }}>+50 XP per episode yang ditonton!</p>
                 </div>
 
+                {/* Stats */}
                 <div className="flex gap-2 mb-5 overflow-x-auto hide-scrollbar">
-                    {[detail.status && { icon: <div className="w-1.5 h-1.5 rounded-full" style={{ background: '#6dfabc' }} />, label: detail.status },
-                      detail.type && { icon: <Tv size={11} />, label: detail.type },
-                      detail.totalEpisodes && { icon: <Clock size={11} />, label: `${detail.totalEpisodes} Ep` },
-                      detail.country && { icon: <Globe size={11} />, label: detail.country },
-                      detail.rating && { icon: <Star size={11} />, label: detail.rating },
+                    {[
+                        detail.status && { icon: <div className="w-1.5 h-1.5 rounded-full" style={{ background: '#6dfabc' }} />, label: detail.status },
+                        detail.type && { icon: <Tv size={11} />, label: detail.type },
+                        detail.totalEpisodes && { icon: <Clock size={11} />, label: `${detail.totalEpisodes} Ep` },
+                        detail.country && { icon: <Globe size={11} />, label: detail.country },
+                        detail.rating && { icon: <Star size={11} />, label: detail.rating },
                     ].filter(Boolean).map((s, i) => (
                         <div key={i} className="flex items-center gap-1.5 px-3 py-2 rounded-xl flex-shrink-0" style={{ background: 'var(--card)', border: '1px solid var(--border)', color: '#fa6d9a' }}>
                             {s.icon}<span className="text-xs font-bold text-white">{s.label}</span>
@@ -130,12 +141,14 @@ const DetailDonghua = () => {
                     ))}
                 </div>
 
+                {/* Watch Button */}
                 <button onClick={() => firstEp && handleWatch(firstEp)}
                     className="w-full flex items-center justify-center gap-2.5 py-4 rounded-2xl font-black text-sm text-white mb-5 active:scale-98 transition-all"
                     style={{ background: 'linear-gradient(135deg, #fa6d9a, #fa6d6d)', boxShadow: '0 8px 24px rgba(250,109,154,0.35)' }}>
                     <Play size={18} fill="currentColor" /> Tonton Sekarang
                 </button>
 
+                {/* Tabs */}
                 <div className="flex gap-1 p-1 rounded-2xl mb-5" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
                     {tabs.map(([tab, label]) => (
                         <button key={tab} onClick={() => setActiveTab(tab)}
@@ -203,5 +216,4 @@ const DetailDonghua = () => {
 };
 
 export default DetailDonghua;
-
             
