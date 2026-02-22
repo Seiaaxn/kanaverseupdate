@@ -89,8 +89,8 @@ const Header = ({ scrolled }) => {
             <div className="flex items-center justify-between px-4" style={{ height: '52px' }}>
                 <div className="flex items-center gap-1">
                     <span className="text-base font-bold tracking-tight">
-                        <span className="text-white">kana</span>
-                        <span className="text-primary-400">verse</span>
+                        <span className="text-white">kanaverse</span>
+                        <span className="text-primary-400">id</span>
                     </span>
                 </div>
 
